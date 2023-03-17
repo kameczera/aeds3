@@ -12,8 +12,6 @@ class lol {
          Champion[] list = new Champion[148];
          Manipulate.readCsv(list);
          Manipulate.write(list);
-         Manipulate.sort();
-        //  Manipulate.read();
         
         Scanner sc = new Scanner(System.in);
         int op;
@@ -104,5 +102,7 @@ class lol {
                     break;
             }
         }while(op != 0);
+
+        Manipulate.sort();
     }
 }

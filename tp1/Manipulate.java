@@ -243,7 +243,7 @@ class Manipulate {
             RandomAccessFile arq4 = new RandomAccessFile("./tmp/arq4.db", "rw");
 
             int nChamps = divideFile(4, arq, arq1, arq2);
-            intercalation(nChamps,4,arq1,arq2,arq3,arq4);
+            intercalation(nChamps,4,arq,arq1,arq2,arq3,arq4); 
         }catch (IOException e) {
             System.out.println("An error occurred.");
             e.printStackTrace();
@@ -258,6 +258,7 @@ class Manipulate {
         Champion c;
         int contChamp = 0;
         int cont2 = 0;
+        int cont1 = 0;
 
         int nChamps = 0;
         int champs1 = 0;
@@ -293,7 +294,10 @@ class Manipulate {
                         arq.read(ba);
                         c1[i].transformToArray(ba);
                         contChamp++;
-                        if(!c1[i].getExist()) i--;
+                        if(!c1[i].getExist()){
+                            i--;
+                            cont1--;
+                        }
                     }
                 }
                 for(int i = 0; i < block; i++){
@@ -357,137 +361,172 @@ class Manipulate {
         return nChamps;
     }
 
-    public static void intercalation(int nChamps, int block, RandomAccessFile arq1, RandomAccessFile arq2, RandomAccessFile arq3, RandomAccessFile arq4){
+    public static void intercalation(int nChamps, int block, RandomAccessFile arq, RandomAccessFile arq1, RandomAccessFile arq2, RandomAccessFile arq3, RandomAccessFile arq4){
         try{
-            if(block < nChamps){
-                arq1.seek(0);
-                arq2.seek(0);
-                int cont = 0;
-                int len;
-                byte[] ba;
-                Champion[] c1 = new Champion[block];
-                Champion[] c2 = new Champion[block];
+            arq1.seek(0);
+            arq2.seek(0);
+            //  limpar arquivos
+            arq3.setLength(0);
+            arq4.setLength(0);
+
+            long[] ps1;
+            long[] ps2;
+
+            int len;
+            byte[] ba;
+            long pos;
+
+            boolean wfile = true;
+            Champion c;
+
+            int nChamps1 = 0;
+            int nChamps2 = 0;
+
+            // descobrir quantidade final de campeões em cada arquivo
+            while(true){
+                if(nChamps1 + nChamps2 < nChamps){
+                    nChamps1 += block;
+                    nChamps2 = nChamps1;
+                }else if(nChamps1 + nChamps2 > nChamps){
+                    nChamps2--;
+                }else break;
+            }
+            // registrar numero de campeões em cada arquivo
+            arq3.writeInt(nChamps1);
+            arq4.writeInt(nChamps2);
+
+            nChamps1 = arq1.readInt();
+            nChamps2 = arq2.readInt();
+
+            // ponteiros dos campeões para memória primária
+            int cont = nChamps;
+            while(cont > 0){
+                ps1 = new long[block];
+                for(int i = 0; i < block; i++){
+                    if(cont > 0){
+                        c = new Champion();
+                        pos = arq1.getFilePointer();
+                        len = arq1.readInt();
+                        ba = new byte[len];
+                        arq1.read(ba);
+                        c.transformToArray(ba);
+                        ps1[i] = pos;
+                        cont--;
+                        System.out.print(cont + " ");
+                        System.out.println(c.getName() + " " + ps1[i]);
+                    }else{
+                        System.out.println("-1");
+                        ps1[i] = -1;
+                    }
+                }
+                ps2 = new long[block];
+                for(int i = 0; i < block; i++){
+                    if(cont > 0){
+                        c = new Champion();
+                        pos = arq2.getFilePointer();
+                        len = arq2.readInt();
+                        ba = new byte[len];
+                        arq2.read(ba);
+                        c.transformToArray(ba);
+                        ps2[i] = pos;
+                        cont--;
+                        System.out.print(cont + " ");
+                        System.out.println(c.getName() + " " + ps2[i]);
+                    }else {
+                        System.out.println("-1");
+                        ps2[i] = -1;
+                    }
+                }
+
                 int cont1 = 0;
                 int cont2 = 0;
+                for(int i = 0; i < block * 2; i++){
+                    Champion c1 = new Champion();
+                    Champion c2 = new Champion();
 
-                int nChamps1 = 0;
-                int nChamps2 = 0;
-                nChamps1 = arq1.readInt();
-                nChamps2 = arq2.readInt();
+                    // se não ultrapassou o tamanho do bloco e o número de ponteiros armazenados na memória primária, registrar o que tem maior id
+                    if(cont1 < block && cont2 < block && ps1[cont1] != -1 && ps2[cont2] != -1){
+                        arq1.seek(ps1[cont1]);
+                        len = arq1.readInt();
+                        ba = new byte[len];
+                        arq1.read(ba);
+                        c1.transformToArray(ba);
 
-                int champs1 = 0;
-                int champs2 = 0;
-                while(true){
-                    if(champs1 + champs2 < nChamps){
-                        champs1 += block;
-                        champs2 = champs1;
-                    }else if(champs1 + champs2 > nChamps){
-                        champs2--;
-                    }else break;
-                }
-
-                System.out.println(champs1 + " " + champs2);
-                System.out.println(nChamps1 + " " + nChamps2);
-                arq3.writeInt(champs1);
-                arq4.writeInt(champs2);
-
-                boolean wFile = true;
-                int index1 = 0;
-                int index2 = 0;
-
-                while(cont2 < nChamps2){
-
-                    // criar campeões em memória primária
-
-                
-                    for(int i = 0; i < block; i++){
-                        if(cont1 < nChamps1){
-                            c1[i] = new Champion();
-                            len = arq1.readInt();
-                            ba = new byte[len];
-                            arq1.read(ba);
-                            c1[i].transformToArray(ba);
-                            cont1++;
-                            if(!c1[i].getExist()){
-                                i--;
-                                cont1--;
+                        arq2.seek(ps2[cont2]);
+                        len = arq2.readInt();
+                        ba = new byte[len];
+                        arq2.read(ba);
+                        c2.transformToArray(ba);
+                        // conferir qual que tem o maior id
+                        if(c1.getId() > c2.getId()){
+                            // troca de arquivo
+                            if(wfile){
+                                ba = c2.transformToByte();
+                                arq3.writeInt(ba.length);
+                                arq3.write(ba);
+                            }else {
+                                ba = c2.transformToByte();
+                                arq4.writeInt(ba.length);
+                                arq4.write(ba);
                             }
-                        }
-                    }
-                    for(int i = 0; i < block; i++){
-                        if(cont2 < nChamps2){
-                            c2[i] = new Champion();
-                            len = arq2.readInt();
-                            ba = new byte[len];
-                            arq2.read(ba);
-                            c2[i].transformToArray(ba);
                             cont2++;
-                            if(!c2[i].getExist()) {
-                                i--;
-                                cont2--;
-                            }
-                        }
-                    }
-                    if(wFile){
-                        for(int i = 0; i < (block * 2); i++){
-                            if(index1 < block && index2 < block){
-                                if(c1[index1].getId() > c2[index2].getId()){
-                                    ba = c2[index2].transformToByte();
-                                    arq3.writeInt(ba.length);
-                                    arq3.write(ba);
-                                    index2++;
-                                }else{
-                                    ba = c1[index1].transformToByte();
-                                    arq3.writeInt(ba.length);
-                                    arq3.write(ba);
-                                    index1++;
-                                }
-                            }else if(index2 < block){
-                                ba = c2[index2].transformToByte();
+                        }else{
+                            // troca de arquivo
+                            if(wfile){
+                                ba = c1.transformToByte();
                                 arq3.writeInt(ba.length);
                                 arq3.write(ba);
-                                index2++;
-                            }else if(index1 < block){
-                                ba = c1[index1].transformToByte();
-                                arq3.writeInt(ba.length);
-                                arq3.write(ba);
-                                index1++;
-                            }
-                        }
-                        wFile = false;
-                    }else {
-                        for(int i = 0; i < block * 2; i++){
-                            if(index1 < block && index2 < block){
-                                if(c1[index1].getId() > c2[index2].getId()){
-                                    ba = c2[index2].transformToByte();
-                                    arq4.writeInt(ba.length);
-                                    arq4.write(ba);
-                                    index1++;
-                                }else{
-                                    ba = c1[index1].transformToByte();
-                                    arq4.writeInt(ba.length);
-                                    arq4.write(ba);
-                                    index2++;
-                                }
-                            }else if(index2 < block){
-                                ba = c2[index2].transformToByte();
+                            }else {
+                                ba = c1.transformToByte();
                                 arq4.writeInt(ba.length);
                                 arq4.write(ba);
-                                index2++;
-                            }else if(index1 < block){
-                                ba = c1[index1].transformToByte();
-                                arq4.writeInt(ba.length);
-                                arq4.write(ba);
-                                index1++;
                             }
+                            cont1++;
                         }
-                        wFile = true;
+                    // se acabou registros do ps2, registrar todos os do ps1
+                    }else if(cont1 < block && ps1[cont1] != -1){
+                        arq1.seek(ps1[cont1]);
+                        len = arq1.readInt();
+                        ba = new byte[len];
+                        arq1.read(ba);
+                        c1.transformToArray(ba);
+                        System.out.println(c1.getName());
+                        if(wfile){
+                            ba = c1.transformToByte();
+                            arq3.writeInt(ba.length);
+                            arq3.write(ba);
+                        }else{
+                            ba = c1.transformToByte();
+                            arq4.writeInt(ba.length);
+                            arq4.write(ba);
+                        }cont1++;
+                    // se acabou registros do ps2, registrar todos os do ps1
+                    }else if(cont2 < block && ps2[cont2] != -1){
+                        arq2.seek(ps2[cont2]);
+                        len = arq2.readInt();
+                        ba = new byte[len];
+                        arq2.read(ba);
+                        c2.transformToArray(ba);
+                        System.out.println(c2.getName());
+                        if(wfile){
+                            ba = c2.transformToByte();
+                            arq3.writeInt(ba.length);
+                            arq3.write(ba);
+                        }else {
+                            ba = c2.transformToByte();
+                            arq4.writeInt(ba.length);
+                            arq4.write(ba);
+                        }cont2++;
                     }
-                    index1 = index2 = 0;
                 }
-                System.out.println("entrei");
-                intercalation(nChamps, block * 2, arq3, arq4, arq1, arq2);
+                cont1 = 0;
+                cont2 = 0;
+                // troca de escrita de arquivo
+                wfile = !wfile;
             }
+
+            // recursão com arquivos mudados de posição
+            if(block < nChamps) intercalation(nChamps, block * 2, arq, arq3, arq4, arq1, arq2);
 
         }catch (IOException e) {
             System.out.println("An error occurred.");
