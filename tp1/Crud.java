@@ -109,7 +109,7 @@ class Crud {
             for(int i = 0; i < len; i++){
                 ba = list[i].transformToByte();
                 pos = arq.getFilePointer();
-                BTree.insert(list[i].getId(), pos);
+                // BTree.insert(list[i].getId(), pos);
                 arq.writeInt(ba.length);
                 arq.write(ba);
             }

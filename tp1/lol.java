@@ -9,18 +9,26 @@ import java.io.RandomAccessFile;
 class lol {
     public static void main(String[] args){
         try{
+            // comando para iniciar a árvore
+            // RandomAccessFile tree = new RandomAccessFile("./tmp/tree/tree.db", "rw");
+            // BTree.start();
+
             // comandos para iniciar o arquivo
             Champion[] list = new Champion[148];
-            BTree.start();
             CSVManipulate.readCsv(list);
             Crud.write(list);
-            RandomAccessFile tree = new RandomAccessFile("./tmp/tree/tree.db", "rw");
+            
             
             Scanner sc = new Scanner(System.in);
             int op;
             long j = 0L;
-            tree.seek(0);
-            tree.readLong();
+
+            // comandos para iniciar o Hash
+            Hash.start();
+            for(int i = 1; i < 82; i++){
+                Hash.insert(i, (long)i);
+            }
+            Hash.readBucket(0);
             
             do{
             System.out.println("Sistema de Banco de Dados de Campeões de League of Legends\n");
